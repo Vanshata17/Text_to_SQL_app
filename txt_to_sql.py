@@ -14,7 +14,7 @@ from chromadb.config import Settings
 from langgraph.graph import StateGraph, END
 from openai import OpenAI
 
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 os.environ["OPENAI_API_KEY"] = "sk-..."  # Replace with your OpenAI API key
