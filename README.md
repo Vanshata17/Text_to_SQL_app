@@ -189,3 +189,10 @@ If you like this project, give it a ⭐ on GitHub!
 Aspiring AI Engineer | Building Agentic AI Systems
 
 ---
+<img width="940" height="501" alt="image" src="https://github.com/user-attachments/assets/8f0a22d7-36dd-42a1-a5ea-c9c0897ea16d" />
+
+<img width="940" height="479" alt="image" src="https://github.com/user-attachments/assets/fc0fb046-d916-465c-b2d8-35592b2b1388" />
+
+<img width="940" height="681" alt="image" src="https://github.com/user-attachments/assets/c901926c-61e3-4d92-b3c1-75964368da7f" />
+
+
