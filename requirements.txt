@@ -1,0 +1,8 @@
+langchain
+langgraph
+openai
+ipykernel
+chromadb
+psycopg2
+streamlit
+pandas
