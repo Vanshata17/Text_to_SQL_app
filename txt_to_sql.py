@@ -18,7 +18,7 @@ from openai import OpenAI
 # Configuration
 # ---------------------------------------------------------------------------
 # os.environ["OPENAI_API_KEY"] = "sk-..."  # Replace with your OpenAI API key
-os.environ["OPENAI_API_KEY"] = "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"
+
 
 
 openai_client = OpenAI()
