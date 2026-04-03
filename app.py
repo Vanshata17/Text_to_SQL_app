@@ -1,13 +1,67 @@
 """
+Streamlit Frontend - Text-to-SQL AI Agent Interface
+====================================================
+A web-based interface for querying databases using natural language. This module
+provides a Streamlit UI that communicates with a FastAPI backend to convert
+plain English questions into SQL queries and display results.
+Architecture:
+    - Streamlit frontend: Interactive UI for user queries and schema exploration
+    - FastAPI backend: Processes queries and executes SQL (runs separately)
+    - Communication: HTTP REST API calls to /tables, /schema, /preview, /query, /health endpoints
+Key Features:
+    1. Natural Language Query Input
+       - Users ask questions in plain English
+       - Submitted via POST to /query endpoint
+       - Results cached in session state
+    2. Schema Browser (Sidebar)
+       - Lists all available database tables (/tables endpoint)
+       - Shows column definitions, types, and constraints for selected table (/schema endpoint)
+       - Provides preview of table data (/preview endpoint)
+       - Cached using @st.cache_data to reduce API calls
+    3. Query Suggestions
+       - Sidebar presents example queries for inspiration
+       - Clicking examples pre-fills the query input field
+       - Uses session state to maintain input value
+    4. Results Display
+       - Metrics: row count, column count, retry attempts
+       - Generated SQL code block for transparency
+       - Results table as interactive DataFrame
+       - Business explanation of results
+       - Error messages if query fails
+    5. API Health Monitoring
+       - Real-time backend status check (/health endpoint)
+       - User-friendly status indicators (success/error)
+       - Displays API endpoint URL for debugging
+Dependencies:
+    - streamlit: Web UI framework
+    - pandas: Data manipulation and display
+    - requests: HTTP client for API communication
+Configuration:
+    - Page title: "Text-to-SQL AI Agent"
+    - Page icon: 🧠
+    - Layout: wide
+    - API base URL: http://localhost:8000
+Prerequisites:
+    - FastAPI backend must be running: uvicorn api:app --reload
+    - Backend must implement endpoints: /tables, /schema/{table}, /preview/{table}, /query, /health
+Usage:
+    1. Start FastAPI backend in separate terminal
+    2. Run: streamlit run app.py
+    3. Access UI in browser (default: http://localhost:8501)
+    4. Enter questions or select example queries from sidebar
 app.py
 ------
-Streamlit frontend for the Text-to-SQL pipeline.
-Run with: streamlit run app.py
+Streamlit frontend — calls FastAPI backend instead of pipeline directly.
+Start backend first:  uvicorn api:app --reload
+Then run:             streamlit run app.py
 """
 
 import streamlit as st
 import pandas as pd
-from txt_to_sql import build_graph, create_tables, insert_data, load_schema_once
+import requests
+
+# API_BASE = "http://localhost:8000"
+API_BASE = "http://your-fastapi-public-ip:8000"
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -19,19 +73,35 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
-# Init pipeline once per session
+# Helper — fetch table list from API
 # ---------------------------------------------------------------------------
-@st.cache_resource(show_spinner="Setting up database and pipeline...")
-def init_pipeline():
-    create_tables()
-    insert_data()
-    load_schema_once()
-    return build_graph()
+@st.cache_data(show_spinner=False)
+def fetch_tables():
+    try:
+        res = requests.get(f"{API_BASE}/tables", timeout=5)
+        return res.json().get("tables", [])
+    except Exception:
+        return []
 
-graph = init_pipeline()
+@st.cache_data(show_spinner=False)
+def fetch_schema(table: str):
+    try:
+        res = requests.get(f"{API_BASE}/schema/{table}", timeout=5)
+        return res.json().get("columns", [])
+    except Exception:
+        return []
+
+@st.cache_data(show_spinner=False)
+def fetch_preview(table: str):
+    try:
+        res = requests.get(f"{API_BASE}/preview/{table}", timeout=5)
+        data = res.json()
+        return data.get("columns", []), data.get("rows", [])
+    except Exception:
+        return [], []
 
 # ---------------------------------------------------------------------------
-# Sidebar — example queries + schema
+# Sidebar
 # ---------------------------------------------------------------------------
 with st.sidebar:
     st.header("💡 Example Queries")
@@ -51,17 +121,50 @@ with st.sidebar:
 
     st.divider()
 
-    st.header("📋 Schema Tables")
-    for table in ["customers", "orders", "order_items", "products",
-                  "categories", "inventory", "payments", "shipments",
-                  "reviews", "warehouses"]:
-        st.code(table)
+    # Live schema browser powered by the API
+    st.header("📋 Schema Browser")
+    tables = fetch_tables()
+    if tables:
+        selected_table = st.selectbox("Choose a table", tables)
+        if selected_table:
+            cols = fetch_schema(selected_table)
+            if cols:
+                col_df = pd.DataFrame(cols)[["name", "type", "pk", "notnull"]]
+                col_df.columns = ["Column", "Type", "PK", "Not Null"]
+                st.dataframe(col_df, use_container_width=True, hide_index=True)
+
+            if st.button("Preview rows", use_container_width=True):
+                columns, rows = fetch_preview(selected_table)
+                if rows:
+                    st.dataframe(
+                        pd.DataFrame(rows, columns=columns),
+                        use_container_width=True,
+                        hide_index=True
+                    )
+                else:
+                    st.info("No rows found.")
+    else:
+        st.warning("API not reachable. Start the backend first.")
+
+    st.divider()
+
+    # API health indicator
+    st.header("🔌 API Status")
+    try:
+        health = requests.get(f"{API_BASE}/health", timeout=3)
+        if health.status_code == 200:
+            st.success("Backend is running")
+        else:
+            st.error("Backend returned an error")
+    except Exception:
+        st.error("Backend not reachable")
+    st.caption(f"Endpoint: `{API_BASE}`")
 
 # ---------------------------------------------------------------------------
-# Main — title
+# Main
 # ---------------------------------------------------------------------------
 st.title("🧠 Text-to-SQL AI Agent")
-st.caption("Ask a question in plain English and get SQL, results, and a business explanation.")
+st.caption("Ask a question in plain English — FastAPI runs the pipeline and returns the results.")
 st.divider()
 
 # ---------------------------------------------------------------------------
@@ -83,29 +186,40 @@ with col_clear:
         st.rerun()
 
 # ---------------------------------------------------------------------------
-# Run pipeline
+# Call FastAPI
 # ---------------------------------------------------------------------------
 if run and query.strip():
-    with st.spinner("Running pipeline..."):
+    with st.spinner("Calling API..."):
         try:
-            state = graph.invoke({"query": query.strip()})
-            st.session_state.last_result = state
+            response = requests.post(
+                f"{API_BASE}/query",
+                json={"question": query.strip()},
+                timeout=60
+            )
+            if response.status_code == 200:
+                st.session_state.last_result = response.json()
+            else:
+                st.error(f"API error {response.status_code}: {response.json().get('detail')}")
+        except requests.exceptions.ConnectionError:
+            st.error("Cannot reach the API. Make sure you ran: `uvicorn api:app --reload`")
         except Exception as e:
-            st.error(f"Pipeline error: {e}")
+            st.error(f"Unexpected error: {e}")
 
 # ---------------------------------------------------------------------------
 # Display results
 # ---------------------------------------------------------------------------
 if "last_result" in st.session_state:
-    state = st.session_state.last_result
+    data = st.session_state.last_result
 
     st.divider()
 
     # ── Metrics ──────────────────────────────────────────────────────────
-    raw = state.get("result")
-    row_count = len(raw["rows"]) if isinstance(raw, dict) else "—"
-    col_count = len(raw["columns"]) if isinstance(raw, dict) else "—"
-    retries   = state.get("retry_count", 0)
+    raw       = data.get("result") or {}
+    rows      = raw.get("rows", [])
+    columns   = raw.get("columns", [])
+    row_count = len(rows) if rows else "—"
+    col_count = len(columns) if columns else "—"
+    retries   = data.get("retries", 0)
 
     m1, m2, m3 = st.columns(3)
     m1.metric("Rows returned", row_count)
@@ -115,29 +229,29 @@ if "last_result" in st.session_state:
     st.divider()
 
     # ── Generated SQL ─────────────────────────────────────────────────────
-    sql = state.get("sql", "")
+    sql = data.get("sql", "")
     if sql:
         st.subheader("🔧 Generated SQL")
         st.code(sql, language="sql")
 
     # ── Error ─────────────────────────────────────────────────────────────
-    error = state.get("error", "")
+    error = data.get("error")
     if error:
         st.error(f"⚠ {error}")
 
     # ── Results table ─────────────────────────────────────────────────────
-    if isinstance(raw, dict) and raw.get("rows"):
+    if rows and columns:
         st.subheader("📊 Query Results")
-        df = pd.DataFrame(raw["rows"], columns=raw["columns"])
+        df = pd.DataFrame(rows, columns=columns)
         st.dataframe(df, use_container_width=True, hide_index=True)
-    elif isinstance(raw, str):
+    elif raw.get("formatted"):
         st.subheader("📊 Formatted Answer")
-        st.info(raw)
+        st.info(raw["formatted"])
     elif not error:
         st.warning("No results found.")
 
     # ── Business explanation ──────────────────────────────────────────────
-    explanation = state.get("explanation", "")
+    explanation = data.get("explanation", "")
     if explanation:
         st.subheader("💼 Business Explanation")
         st.success(explanation)
