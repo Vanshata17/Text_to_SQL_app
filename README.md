@@ -195,4 +195,4 @@ Aspiring AI Engineer | Building Agentic AI Systems
 
 <img width="940" height="681" alt="image" src="https://github.com/user-attachments/assets/c901926c-61e3-4d92-b3c1-75964368da7f" />
 
-
+Demo available on request: https://texttosqlapp-p6pvfjpargujvsowt3mte8.streamlit.app/
