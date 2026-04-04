@@ -36,8 +36,8 @@ env:
   ECS_CLUSTER: text_to_sql_cluster
   API_SERVICE: api-service
   FRONTEND_SERVICE: frontend-service
-  ECR_REPOSITORY_API: text_to_sql_api
-  ECR_REPOSITORY_FRONTEND: text_to_sql_frontend
+  ECR_REPOSITORY_API: txt_to_sql_api
+  ECR_REPOSITORY_FRONTEND: txt_to_sql_frontend
 
 jobs:
   deploy:
