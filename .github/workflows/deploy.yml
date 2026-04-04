@@ -33,10 +33,11 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REGISTRY: ${{ secrets['349953239380'] }}.dkr.ecr.us-east-1.amazonaws.com
   ECS_CLUSTER: text-to-sql-cluster
   API_SERVICE: api-service
   FRONTEND_SERVICE: frontend-service
+  ECR_REPOSITORY_API: text-to-sql-api
+  ECR_REPOSITORY_FRONTEND: text-to-sql-streamlit
 
 jobs:
   deploy:
@@ -60,14 +61,22 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Build and push API image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -f Dockerfile.api -t ${{ env.ECR_REGISTRY }}/text-to-sql-api:latest .
-          docker push ${{ env.ECR_REGISTRY }}/text-to-sql-api:latest
+          docker build -f Dockerfile.api -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_API }}:$IMAGE_TAG -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_API }}:latest .
+          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_API }}:$IMAGE_TAG
+          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_API }}:latest
 
       - name: Build and push Frontend image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -f Dockerfile.streamlit -t ${{ env.ECR_REGISTRY }}/text-to-sql-streamlit:latest .
-          docker push ${{ env.ECR_REGISTRY }}/text-to-sql-streamlit:latest
+          docker build -f Dockerfile.streamlit -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:latest .
+          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG
+          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:latest
 
       - name: Deploy API to ECS
         run: |

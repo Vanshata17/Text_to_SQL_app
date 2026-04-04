@@ -56,12 +56,13 @@ Start backend first:  uvicorn api:app --reload
 Then run:             streamlit run app.py
 """
 
+import os
+
 import streamlit as st
 import pandas as pd
 import requests
 
-# API_BASE = "http://localhost:8000"
-API_BASE = "http://your-fastapi-public-ip:8000"
+API_BASE = os.getenv("API_BASE", "http://localhost:8000")
 
 # ---------------------------------------------------------------------------
 # Page config
