@@ -8,3 +8,5 @@ pandas
 fastapi
 uvicorn
 requests
+psycopg2
+psycopg2-binary
