@@ -37,7 +37,7 @@ env:
   API_SERVICE: api-service
   FRONTEND_SERVICE: frontend-service
   ECR_REPOSITORY_API: text-to-sql-api
-  ECR_REPOSITORY_FRONTEND: text-to-sql-streamlit
+  ECR_REPOSITORY_FRONTEND: text_to_sql_streamlit
 
 jobs:
   deploy:
