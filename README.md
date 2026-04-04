@@ -1,4 +1,5 @@
 # 🧠 Text-to-SQL AI Agent (LangGraph + RAG + SQLite)
+
 An intelligent AI-powered application that converts **natural language queries into SQL**, executes them on a database, and returns results — built using **LangGraph, OpenAI, ChromaDB, and SQLite**.
 
 ---
