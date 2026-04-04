@@ -34,7 +34,7 @@ on:
 env:
   AWS_REGION: us-east-1
   ECS_CLUSTER: text_to_sql_cluster
-  API_SERVICE: api-service
+  API_SERVICE: api_service
   FRONTEND_SERVICE: frontend-service
   ECR_REPOSITORY_API: txt_to_sql_api
   ECR_REPOSITORY_FRONTEND: txt_to_sql_frontend
