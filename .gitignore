@@ -10,3 +10,4 @@ wheels/
 .venv
 .env
 key_pair.pem
+PROJECT_NOTES.md
