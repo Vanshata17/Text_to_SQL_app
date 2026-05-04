@@ -644,8 +644,14 @@ def build_graph():
     builder.add_edge("generate_sql",    "validate_sql")
     builder.add_edge("validate_sql",    "execute_sql")
 
+    MAX_RETRIES = 3
+
     def check_error(state: GraphState) -> str:
-        return "fix_sql" if state.get("error") else "format_answer"
+        if not state.get("error"):
+            return "format_answer"
+        if state.get("retry_count", 0) >= MAX_RETRIES:
+            return "end"
+        return "fix_sql"
 
     builder.add_conditional_edges(
         "execute_sql",
@@ -653,6 +659,7 @@ def build_graph():
         {
             "fix_sql":       "fix_sql",
             "format_answer": "format_answer",
+            "end":           END,
         }
     )
 

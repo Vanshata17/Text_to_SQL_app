@@ -12,6 +12,12 @@ import sqlite3
 
 from txt_to_sql import build_graph, create_tables, insert_data, load_schema_once, DB_PATH
 
+ALLOWED_TABLES = {
+    "customers", "categories", "products", "orders",
+    "order_items", "payments", "warehouses", "inventory",
+    "shipments", "reviews"
+}
+
 # ---------------------------------------------------------------------------
 # App setup
 # ---------------------------------------------------------------------------
@@ -104,6 +110,8 @@ def get_tables():
 @app.get("/schema/{table_name}")
 def get_table_schema(table_name: str):
     """Return column info for a specific table."""
+    if table_name not in ALLOWED_TABLES:
+        raise HTTPException(status_code=400, detail=f"Unknown table '{table_name}'.")
     conn = sqlite3.connect(DB_PATH)
     cur  = conn.cursor()
     try:
@@ -124,6 +132,8 @@ def get_table_schema(table_name: str):
 @app.get("/preview/{table_name}")
 def preview_table(table_name: str, limit: int = 5):
     """Return the first N rows of a table (default 5)."""
+    if table_name not in ALLOWED_TABLES:
+        raise HTTPException(status_code=400, detail=f"Unknown table '{table_name}'.")
     conn = sqlite3.connect(DB_PATH)
     cur  = conn.cursor()
     try:
